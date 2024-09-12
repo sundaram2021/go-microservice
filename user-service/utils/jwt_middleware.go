@@ -1,15 +1,13 @@
-// utils/jwt_middleware.go
 package utils
 
 import (
-	"log"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
-// utils/jwt_middleware.go
+// AuthMiddleware ensures the request is authenticated with a valid JWT token
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString := c.GetHeader("Authorization")
@@ -19,12 +17,9 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		log.Println("Authorization header:", tokenString) // <-- Add this to log the token
-
-		// Check if token has the "Bearer" prefix
+		// Ensure the token is in the correct "Bearer <token>" format
 		parts := strings.Split(tokenString, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			log.Println("Invalid token format") // <-- Log invalid format
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token format"})
 			c.Abort()
 			return
@@ -32,19 +27,17 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		tokenString = parts[1]
 
-		// Validate the token
+		// Validate the JWT token and extract the claims (username and role)
 		claims, err := ValidateToken(tokenString)
 		if err != nil {
-			log.Println("Invalid or expired token:", err) // <-- Log token validation issues
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
 			c.Abort()
 			return
 		}
 
-		log.Println("Token is valid, claims:", claims) // <-- Log valid token claims
-
-		// Store the username in the context
+		// Store the username and role in the context
 		c.Set("username", claims.Username)
+		c.Set("role", claims.Role)
 		c.Next()
 	}
 }

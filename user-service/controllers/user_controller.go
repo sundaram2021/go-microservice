@@ -2,58 +2,51 @@
 package controllers
 
 import (
-	"log"
 	"net/http"
-	"user-service/config"
 	"user-service/models"
 	"user-service/utils"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-func InitializeRoutes(router *gin.Engine) {
-	// Register route
+func InitializeRoutes(router *gin.Engine, db *gorm.DB) {
+	// Register route with raw SQL queries
 	router.POST("/register", func(c *gin.Context) {
-		// Create a new database connection for this request
-		db, err := config.SetupDatabase()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database connection failed"})
-			return
-		}
-
-		// Deallocate any existing prepared statements to prevent conflicts
-		db.Exec("DEALLOCATE ALL")
-
 		var user models.User
 		if err := c.ShouldBindJSON(&user); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		// Check if the user already exists
-		if err := db.Where("username = ?", user.Username).First(&user).Error; err == nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "User already exists"})
+		// Check if the username already exists
+		var count int64
+		db.Raw("SELECT COUNT(*) FROM users WHERE username = ?", user.Username).Scan(&count)
+		if count > 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Username already exists"})
 			return
 		}
 
-		// Save user to database
-		if err := db.Create(&user).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		// Hash the password
+		hashedPassword, err := utils.HashPassword(user.Password)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+			return
+		}
+		user.Password = hashedPassword
+
+		// Insert the user using raw SQL query
+		result := db.Exec("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", user.Username, user.Password, user.Role)
+		if result.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register user", "details": result.Error.Error()})
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
+		c.JSON(http.StatusOK, gin.H{"message": "User registered successfully", "user": user})
 	})
 
-	// Login route
+	// Login route with raw SQL queries
 	router.POST("/login", func(c *gin.Context) {
-		// Create a new database connection for this request
-		db, err := config.SetupDatabase()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database connection failed"})
-			return
-		}
-
 		var req struct {
 			Username string `json:"username" binding:"required"`
 			Password string `json:"password" binding:"required"`
@@ -65,13 +58,20 @@ func InitializeRoutes(router *gin.Engine) {
 		}
 
 		var user models.User
-		if err := db.Where("username = ? AND password = ?", req.Username, req.Password).First(&user).Error; err != nil {
+		db.Raw("SELECT * FROM users WHERE username = ?", req.Username).Scan(&user)
+		if user.Username == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 			return
 		}
 
-		// Generate JWT token for the user
-		token, err := utils.GenerateToken(user.Username)
+		// Compare the hashed password
+		if err := utils.CheckPasswordHash(req.Password, user.Password); err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+			return
+		}
+
+		// Generate a JWT token
+		token, err := utils.GenerateToken(user.Username, user.Role)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not generate token"})
 			return
@@ -80,34 +80,16 @@ func InitializeRoutes(router *gin.Engine) {
 		c.JSON(http.StatusOK, gin.H{"token": token})
 	})
 
-	// controllers/user_controller.go
 	router.GET("/profile", utils.AuthMiddleware(), func(c *gin.Context) {
-		// Create a new database connection for this request
-		db, err := config.SetupDatabase()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database connection failed"})
-			return
-		}
-
-		// Get the username from the context (set by the JWT middleware)
-		username := c.MustGet("username").(string)
-
-		// Log the username extracted from the JWT token
-		log.Println("Username from JWT:", username)
-
-		// Fetch user from the database using the username
+		username := c.MustGet("username").(string) // Retrieve the username from the token
 		var user models.User
-		if err := db.Where("LOWER(username) = LOWER(?)", username).First(&user).Error; err != nil {
-			log.Println("User not found in database for username:", username)
+
+		// Fetch the user details from the database using the username
+		if err := db.Where("username = ?", username).First(&user).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 			return
 		}
 
-		// If the user is found, return the username
-		c.JSON(http.StatusOK, gin.H{
-			"message":  "Welcome " + user.Username,
-			"username": user.Username,
-		})
+		c.JSON(http.StatusOK, gin.H{"user": user})
 	})
-
 }

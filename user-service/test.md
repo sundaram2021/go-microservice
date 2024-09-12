@@ -1,106 +1,136 @@
-Great to hear that it's running now! Let's test your user service to ensure that everything is working as expected. Here are some steps to test the API endpoints you have implemented:
+Here are all the API routes for your **user-service** with role-based authentication to test:
 
 ### 1. **Register a New User**
-We will first test the registration of a new user. Use the following `curl` command or Postman to make the request.
 
+This route allows you to create a new user (either with the role of `user` or `admin`).
+
+#### Request:
 ```bash
 curl -X POST http://localhost:8081/register \
-     -H "Content-Type: application/json" \
-     -d '{"username": "user1", "password": "password123"}'
+-H "Content-Type: application/json" \
+-d '{"username": "user1", "password": "password123", "role": "user"}'
 ```
 
-You should expect a response like:
+#### Response:
+- **Success**: `200 OK`
+    ```json
+    {
+      "message": "User registered successfully",
+      "user": {
+        "username": "user1",
+        "password": "$2a$10$hashed_password",
+        "role": "user"
+      }
+    }
+    ```
 
-```json
-{
-  "message": "User registered successfully"
-}
-```
+- **Error**: `400 Bad Request` (if username already exists)
+    ```json
+    {
+      "error": "Username already exists"
+    }
+    ```
 
-### 2. **Login and Get JWT Token**
-Next, we will test the login functionality, which should return a JWT token.
+---
 
+### 2. **Login User**
+
+This route allows a user (with either `user` or `admin` role) to log in and receive a JWT token.
+
+#### Request:
 ```bash
 curl -X POST http://localhost:8081/login \
-     -H "Content-Type: application/json" \
-     -d '{"username": "user1", "password": "password123"}'
+-H "Content-Type: application/json" \
+-d '{"username": "user1", "password": "password123"}'
 ```
 
-Expected response (this will contain the JWT token):
+#### Response:
+- **Success**: `200 OK`
+    ```json
+    {
+      "token": "<jwt_token>"
+    }
+    ```
 
-```json
-{
-  "token": "your_jwt_token_here"
-}
-```
+- **Error**: `401 Unauthorized` (if credentials are invalid)
+    ```json
+    {
+      "error": "Invalid credentials"
+    }
+    ```
 
-Copy the `token` from the response as you'll need it for the next step.
+---
 
-### 3. **Access Protected Route (Profile)**
-Now, let's test accessing a protected route that requires JWT authentication. Use the token from the previous step and pass it in the `Authorization` header.
+### 3. **View User Profile**
 
+This route allows an authenticated user (either `admin` or `user`) to view their own profile.
+
+#### Request:
 ```bash
 curl -X GET http://localhost:8081/profile \
-     -H "Authorization: Bearer your_jwt_token_here"
+-H "Authorization: Bearer <jwt_token>"
 ```
 
-Expected response:
+#### Response:
+- **Success**: `200 OK`
+    ```json
+    {
+      "user": {
+        "ID": 1,
+        "username": "user1",
+        "password": "$2a$10$hashed_password",
+        "role": "user",
+        "CreatedAt": "2024-09-12T00:00:00Z",
+        "UpdatedAt": "2024-09-12T00:00:00Z"
+      }
+    }
+    ```
 
-```json
-{
-  "message": "Welcome user1"
-}
-```
+- **Error**: `401 Unauthorized` (if no or invalid token is provided)
+    ```json
+    {
+      "error": "Invalid or expired token"
+    }
+    ```
 
-### 4. **Handling Error Cases**
-Let’s also test for some common error cases to ensure the service behaves as expected:
+---
 
-#### Register with an existing username:
+### 4. **Protected Admin-Only Route (Example)**
+
+If you have any admin-only routes (e.g., accessing user management), you can restrict them based on the `admin` role.
+
+#### Example Request:
 ```bash
-curl -X POST http://localhost:8081/register \
-     -H "Content-Type: application/json" \
-     -d '{"username": "user1", "password": "password123"}'
+curl -X GET http://localhost:8081/admin \
+-H "Authorization: Bearer <jwt_token>"
 ```
 
-Expected response (user already exists):
+#### Response:
+- **Success** (Admin Access): `200 OK`
+    ```json
+    {
+      "message": "Admin-only access"
+    }
+    ```
 
-```json
-{
-  "error": "user already exists"
-}
-```
+- **Error** (Non-admin Access): `403 Forbidden`
+    ```json
+    {
+      "error": "You do not have the necessary permissions to access this route"
+    }
+    ```
 
-#### Invalid Login:
-```bash
-curl -X POST http://localhost:8081/login \
-     -H "Content-Type: application/json" \
-     -d '{"username": "user1", "password": "wrongpassword"}'
-```
+---
 
-Expected response:
+### Summary of API Endpoints:
 
-```json
-{
-  "error": "Invalid credentials"
-}
-```
+| **Route**         | **Method** | **Authentication** | **Description**                                        |
+|-------------------|------------|--------------------|--------------------------------------------------------|
+| `/register`       | `POST`     | No                 | Register a new user (with either `admin` or `user` role) |
+| `/login`          | `POST`     | No                 | Login to get a JWT token                                |
+| `/profile`        | `GET`      | Yes (user/admin)   | View the profile of the currently logged-in user        |
+| `/admin`          | `GET`      | Yes (admin)        | Example admin-only route (replace with actual route)    |
 
-#### Access protected route with invalid/expired token:
-```bash
-curl -X GET http://localhost:8081/profile \
-     -H "Authorization: Bearer invalid_token"
-```
+---
 
-Expected response:
-
-```json
-{
-  "error": "Invalid or expired token"
-}
-```
-
-### If Everything Works
-
-If all these tests pass, that means your user service is functioning correctly with registration, login, and JWT authentication.
-
-Let me know the results of the testing!
+You can test these routes using the provided `curl` commands. Let me know if you need additional routes or features!

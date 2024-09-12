@@ -1,20 +1,30 @@
-// config/config.go
 package config
 
 import (
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+    "log"
+    "user-service/models"
+    "gorm.io/driver/postgres"
+    "gorm.io/gorm"
+    "os"
 )
 
-// In your SetupDatabase function
-func SetupDatabase() (*gorm.DB, error) {
-	dsn := "user=postgres.bibabfrfswkkgzrepncb password=xsuu66hwXVQ45Wce host=aws-0-ap-south-1.pooler.supabase.com port=6543 dbname=postgres"
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info), // Enable detailed logs
-	})
-	if err != nil {
-		return nil, err
-	}
-	return db, nil
+func SetupDatabase() *gorm.DB {
+    // Load the database connection from environment variables
+    dbHost := os.Getenv("DB_HOST")
+    dbUser := os.Getenv("DB_USER")
+    dbPassword := os.Getenv("DB_PASSWORD")
+    dbName := os.Getenv("DB_NAME")
+    dbPort := os.Getenv("DB_PORT")
+    sslMode := os.Getenv("SSL_MODE")
+	
+
+    dsn := "host=" + dbHost + " user=" + dbUser + " password=" + dbPassword + " dbname=" + dbName + " port=" + dbPort + " sslmode=" + sslMode + " pgbouncer=true"
+
+    db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+    if err != nil {
+        log.Fatalf("Failed to connect to database: %v", err)
+    }
+
+    db.AutoMigrate(&models.User{})
+    return db
 }
