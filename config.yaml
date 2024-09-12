@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-config
+data:
+  DB_HOST: "aws-0-ap-south-1.pooler.supabase.com"
+  DB_PORT: "5432"
+  DB_NAME: "postgres"
+  SSL_MODE: "require"
+  PRODUCT_SERVICE_URL: "http://product-service:8082"
