@@ -1,4 +1,3 @@
-// utils/jwt.go
 package utils
 
 import (
@@ -11,11 +10,10 @@ var jwtSecret = []byte("your_secret_key")
 
 type Claims struct {
 	Username string `json:"username"`
-	Role     string `json:"role"` // Add role to the token claims
+	Role     string `json:"role"`
 	jwt.StandardClaims
 }
 
-// GenerateToken creates a JWT token with the user's username and role
 func GenerateToken(username string, role string) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
@@ -30,8 +28,7 @@ func GenerateToken(username string, role string) (string, error) {
 	return token.SignedString(jwtSecret)
 }
 
-// ValidateToken validates the token and extracts the claims
-// utils/jwt.go
+
 func ValidateToken(tokenString string) (*Claims, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
