@@ -1,4 +1,3 @@
-// models/user.go
 package models
 
 import (
@@ -9,5 +8,5 @@ type User struct {
 	gorm.Model
 	Username string `json:"username"`
 	Password string `json:"password"`
-	Role     string `json:"role"` // New field to store the role (admin or user)
+	Role     string `json:"role"`
 }
