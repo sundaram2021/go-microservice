@@ -10,7 +10,6 @@ import (
 )
 
 func SetupDatabase() *gorm.DB {
-	// Load the database connection from environment variables
 	dbHost := os.Getenv("DB_HOST")
 	dbUser := os.Getenv("DB_USER")
 	dbPassword := os.Getenv("DB_PASSWORD")
