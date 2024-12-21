@@ -1,4 +1,3 @@
-Here are all the API routes for your **user-service** with role-based authentication to test:
 
 ### 1. **Register a New User**
 
@@ -133,4 +132,3 @@ curl -X GET http://localhost:8081/admin \
 
 ---
 
-You can test these routes using the provided `curl` commands. Let me know if you need additional routes or features!
