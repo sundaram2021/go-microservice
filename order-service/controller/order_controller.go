@@ -1,4 +1,3 @@
-// controllers/order_controller.go
 package controller
 
 import (
@@ -15,11 +14,9 @@ import (
 
 func InitializeOrderRoutes(router *gin.Engine, db *gorm.DB) {
 
-	// Protected routes
 	protected := router.Group("/")
-	protected.Use(utils.AuthMiddleware()) // JWT Middleware to protect routes
+	protected.Use(utils.AuthMiddleware()) 
 
-	// Public route: View a specific order by ID
 	router.GET("/orders/:id", func(c *gin.Context) {
 		var order models.Order
 		orderID := c.Param("id")
@@ -31,7 +28,6 @@ func InitializeOrderRoutes(router *gin.Engine, db *gorm.DB) {
 		c.JSON(http.StatusOK, gin.H{"order": order})
 	})
 
-	// Public route: View all orders (Admin can view all, users can see their own orders)
 	router.GET("/orders", func(c *gin.Context) {
 		var orders []models.Order
 		userID := c.Query("user_id")
@@ -40,13 +36,12 @@ func InitializeOrderRoutes(router *gin.Engine, db *gorm.DB) {
 			userIDInt, _ := strconv.Atoi(userID)
 			db.Where("user_id = ?", userIDInt).Find(&orders)
 		} else {
-			db.Find(&orders) // Admin case
+			db.Find(&orders) 
 		}
 
 		c.JSON(http.StatusOK, gin.H{"orders": orders})
 	})
 
-	// Create an order (Authenticated route)
 	protected.POST("/orders", func(c *gin.Context) {
 		var order models.Order
 		if err := c.ShouldBindJSON(&order); err != nil {
@@ -54,7 +49,6 @@ func InitializeOrderRoutes(router *gin.Engine, db *gorm.DB) {
 			return
 		}
 
-		// Fetch product details from the product-service
 		productID := order.ProductID
 		productServiceURL := os.Getenv("PRODUCT_SERVICE_URL")
 		productURL := productServiceURL +"/products/" + strconv.Itoa(int(productID))
@@ -66,7 +60,6 @@ func InitializeOrderRoutes(router *gin.Engine, db *gorm.DB) {
 		}
 		defer resp.Body.Close()
 
-		// Parse product details response
 		var productResponse struct {
 			Product struct {
 				Price float64 `json:"price"`
@@ -78,10 +71,8 @@ func InitializeOrderRoutes(router *gin.Engine, db *gorm.DB) {
 			return
 		}
 
-		// Calculate total amount based on product price and quantity
 		order.TotalAmount = productResponse.Product.Price * float64(order.Quantity)
 
-		// Save the order to the database
 		if err := db.Create(&order).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create order"})
 			return
@@ -90,7 +81,6 @@ func InitializeOrderRoutes(router *gin.Engine, db *gorm.DB) {
 		c.JSON(http.StatusOK, gin.H{"message": "Order created successfully", "order": order})
 	})
 
-	// Update order status (Admin-only route)
 	protected.PUT("/orders/:id/status", func(c *gin.Context) {
 		role := c.GetString("role")
 		if role != "admin" {
@@ -101,13 +91,11 @@ func InitializeOrderRoutes(router *gin.Engine, db *gorm.DB) {
 		var order models.Order
 		orderID := c.Param("id")
 
-		// Fetch the order by ID
 		if err := db.Where("id = ?", orderID).First(&order).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
 			return
 		}
 
-		// Get the new status from the request body
 		var req struct {
 			Status string `json:"status" binding:"required"`
 		}
@@ -117,7 +105,6 @@ func InitializeOrderRoutes(router *gin.Engine, db *gorm.DB) {
 			return
 		}
 
-		// Update the order status
 		order.Status = req.Status
 
 		if err := db.Save(&order).Error; err != nil {
