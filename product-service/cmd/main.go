@@ -1,4 +1,3 @@
-// cmd/main.go
 package main
 
 import (
@@ -12,12 +11,9 @@ import (
 func main() {
 	router := gin.Default()
 
-	// Initialize the database
 	db := config.SetupDatabase()
 
-	// Initialize product routes
 	controllers.InitializeProductRoutes(router, db)
 
-	// Start the server
 	log.Fatal(router.Run(":8082"))
 }
