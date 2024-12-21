@@ -1,4 +1,3 @@
-Here are all the API routes for the **order-service** with role-based authentication, as implemented earlier:
 
 ### 1. **Create an Order** (Authenticated Route)
 
@@ -175,4 +174,3 @@ curl -X PUT http://localhost:8083/orders/1/status \
 
 ---
 
-You can test these routes using the provided `curl` commands. Let me know how the testing goes or if you need any modifications!
