@@ -1,4 +1,3 @@
-// utils/jwt.go
 package utils
 
 import (
@@ -11,11 +10,10 @@ var jwtSecret = []byte("your_secret_key")
 
 type Claims struct {
 	Username string `json:"username"`
-	Role     string `json:"role"` // Role field to implement role-based access control (optional)
+	Role     string `json:"role"` 
 	jwt.StandardClaims
 }
 
-// ValidateToken validates the JWT token and extracts the claims
 func ValidateToken(tokenString string) (*Claims, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
