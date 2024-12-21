@@ -1,4 +1,3 @@
-// models/order.go
 package models
 
 import (
@@ -11,5 +10,5 @@ type Order struct {
 	ProductID   uint    `json:"product_id"`
 	Quantity    int     `json:"quantity"`
 	TotalAmount float64 `json:"total_amount"`
-	Status      string  `json:"status"` // e.g., "Pending", "Shipped", "Delivered"
+	Status      string  `json:"status"` 
 }
