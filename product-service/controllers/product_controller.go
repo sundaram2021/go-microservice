@@ -10,7 +10,6 @@ import (
 )
 
 func InitializeProductRoutes(router *gin.Engine, db *gorm.DB) {
-	// Public routes (anyone can access these)
 	router.GET("/products", func(c *gin.Context) {
 		var products []models.Product
 		if err := db.Find(&products).Error; err != nil {
@@ -29,11 +28,8 @@ func InitializeProductRoutes(router *gin.Engine, db *gorm.DB) {
 		c.JSON(http.StatusOK, gin.H{"product": product})
 	})
 
-	// Protected routes (only authenticated users can access these)
 	protected := router.Group("/")
-	protected.Use(utils.AuthMiddleware()) // Apply JWT Authentication Middleware
-
-	// Only authenticated users can add products
+	protected.Use(utils.AuthMiddleware())
 	protected.POST("/products", func(c *gin.Context) {
 		var product models.Product
 		if err := c.ShouldBindJSON(&product); err != nil {
@@ -49,7 +45,6 @@ func InitializeProductRoutes(router *gin.Engine, db *gorm.DB) {
 		c.JSON(http.StatusOK, gin.H{"message": "Product created successfully", "product": product})
 	})
 
-	// Only authenticated users can update products
 	protected.PUT("/products/:id", func(c *gin.Context) {
 		var product models.Product
 		if err := db.Where("id = ?", c.Param("id")).First(&product).Error; err != nil {
@@ -70,7 +65,6 @@ func InitializeProductRoutes(router *gin.Engine, db *gorm.DB) {
 		c.JSON(http.StatusOK, gin.H{"message": "Product updated successfully", "product": product})
 	})
 
-	// Only authenticated users can delete products
 	protected.DELETE("/products/:id", func(c *gin.Context) {
 		var product models.Product
 		if err := db.Where("id = ?", c.Param("id")).First(&product).Error; err != nil {
