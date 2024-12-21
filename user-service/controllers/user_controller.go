@@ -1,4 +1,3 @@
-// controllers/user_controller.go
 package controllers
 
 import (
@@ -11,7 +10,6 @@ import (
 )
 
 func InitializeRoutes(router *gin.Engine, db *gorm.DB) {
-	// Register route with raw SQL queries
 	router.POST("/register", func(c *gin.Context) {
 		var user models.User
 		if err := c.ShouldBindJSON(&user); err != nil {
@@ -19,7 +17,6 @@ func InitializeRoutes(router *gin.Engine, db *gorm.DB) {
 			return
 		}
 
-		// Check if the username already exists
 		var count int64
 		db.Raw("SELECT COUNT(*) FROM users WHERE username = ?", user.Username).Scan(&count)
 		if count > 0 {
@@ -27,7 +24,6 @@ func InitializeRoutes(router *gin.Engine, db *gorm.DB) {
 			return
 		}
 
-		// Hash the password
 		hashedPassword, err := utils.HashPassword(user.Password)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
@@ -35,7 +31,6 @@ func InitializeRoutes(router *gin.Engine, db *gorm.DB) {
 		}
 		user.Password = hashedPassword
 
-		// Insert the user using raw SQL query
 		result := db.Exec("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", user.Username, user.Password, user.Role)
 		if result.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register user", "details": result.Error.Error()})
@@ -45,7 +40,6 @@ func InitializeRoutes(router *gin.Engine, db *gorm.DB) {
 		c.JSON(http.StatusOK, gin.H{"message": "User registered successfully", "user": user})
 	})
 
-	// Login route with raw SQL queries
 	router.POST("/login", func(c *gin.Context) {
 		var req struct {
 			Username string `json:"username" binding:"required"`
@@ -64,13 +58,11 @@ func InitializeRoutes(router *gin.Engine, db *gorm.DB) {
 			return
 		}
 
-		// Compare the hashed password
 		if err := utils.CheckPasswordHash(req.Password, user.Password); err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 			return
 		}
 
-		// Generate a JWT token
 		token, err := utils.GenerateToken(user.Username, user.Role)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not generate token"})
@@ -81,10 +73,9 @@ func InitializeRoutes(router *gin.Engine, db *gorm.DB) {
 	})
 
 	router.GET("/profile", utils.AuthMiddleware(), func(c *gin.Context) {
-		username := c.MustGet("username").(string) // Retrieve the username from the token
+		username := c.MustGet("username").(string) 
 		var user models.User
 
-		// Fetch the user details from the database using the username
 		if err := db.Where("username = ?", username).First(&user).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 			return
