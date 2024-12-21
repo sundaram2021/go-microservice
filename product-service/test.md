@@ -1,4 +1,4 @@
-Here are the routes you can use to test the **product-service**. These routes will cover all the functionalities: listing products, viewing a specific product, adding a product, updating a product, and deleting a product. For the **add**, **update**, and **delete** routes, you'll need a valid JWT token from the **user-service** for authentication.
+
 
 ### 1. **List All Products** (Public Route)
 - **Method**: `GET`
@@ -193,4 +193,3 @@ Copy the token from the response and use it in your **product-service** requests
 | `PUT`  | `/products/:id`      | Yes           | Update an existing product        |
 | `DELETE`| `/products/:id`     | Yes           | Delete a product                  |
 
-Let me know if you encounter any issues during testing or need further adjustments!
